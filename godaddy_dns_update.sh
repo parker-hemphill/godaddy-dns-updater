@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/bin/bash
 
 domain="$1"
 subdomain="$2"
