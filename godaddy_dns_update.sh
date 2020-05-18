@@ -4,7 +4,7 @@ domain="$1"
 subdomain="$2"
 apikey="$3"
 dns_check="${4}"
-logdest="/dev/shm/godaddy_update.log"
+logdest="/tmp/godaddy_update.log"
 
 # Set timezone for container
 export TZ="${5}"
