@@ -6,12 +6,11 @@ RUN apk add --no-cache curl
 RUN apk add --no-cache bash
 
 # Set version label
-LABEL build_version="Godaddy-DNS-Updater, Version: 1.0.4, Build-date: 18-May-2020"
+LABEL build_version="Godaddy-DNS-Updater, Version: 1.0.5, Build-date: 18-May-2020"
 LABEL maintainer=parker-hemphill
 
 # Copy convert shell scripts to /opt
 RUN echo "**** copy shell scripts to /opt ****"
-RUN mkdir /opt
 COPY godaddy_dns_update.sh /opt/
 
 # Set scripts as executable
