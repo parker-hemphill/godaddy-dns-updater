@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/bash
 
 mydomain=${DOMAIN}
 myhostname=${HOSTNAME}
