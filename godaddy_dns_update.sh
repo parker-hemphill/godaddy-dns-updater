@@ -5,6 +5,7 @@ subdomain="$2"
 apikey="$3"
 dns_check="${4}"
 logdest="/tmp/godaddy_update.log"
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 # Set timezone for container
 export TZ="${5}"
