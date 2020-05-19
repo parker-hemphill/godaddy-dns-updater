@@ -8,28 +8,25 @@ else
   domain=${2}.${1}
 fi
 
-logdest="/tmp/${domain}.log"
+logdest="/tmp/${domain}-log"
 export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-
-# Set timezone for container
-export TZ="${5}"
 
 # Check if variables are set and exit if not
 if [[ ${1} == 'NULL' ]]
 then
-  echo "[$(date +%D" "%H:%M" "%Z)] DOMAIN not set, exiting container"
-  echo "[$(date +%D" "%H:%M" "%Z)] DOMAIN not set, exiting container" >> ${logdest}
+  echo "[$(TZ=${5} date +%D" "%H:%M" "%Z)] DOMAIN not set, exiting container"
+  echo "[$(TZ=${5} date +%D" "%H:%M" "%Z)] DOMAIN not set, exiting container" >> ${logdest}
   exit 1
 fi
 if [[ ${3} == 'NULL' ]]
 then
-  echo "[$(date +%D" "%H:%M" "%Z)] API_KEY not set, exiting container"
-  echo "[$(date +%D" "%H:%M" "%Z)] API_KEY not set, exiting container" >> ${logdest}
+  echo "[$(TZ=${5} date +%D" "%H:%M" "%Z)] API_KEY not set, exiting container"
+  echo "[$(TZ=${5} date +%D" "%H:%M" "%Z)] API_KEY not set, exiting container" >> ${logdest}
   exit 1
 fi
 
-echo "[$(date +%D" "%H:%M" "%Z)] Monitoring records for ${domain}, checks every ${4} seconds"
-echo "[$(date +%D" "%H:%M" "%Z)] Monitoring records for ${domain}, checks every ${4} seconds" >> ${logdest}
+echo -e "[$(TZ=${5} date +%D" "%H:%M" "%Z)] Monitoring records for ${domain}, checks every ${4} seconds\nCurrent external IP is $(curl -s "https://api.ipify.org")"
+echo -e "[$(TZ=${5} date +%D" "%H:%M" "%Z)] Monitoring records for ${domain}, checks every ${4} seconds\nCurrent external IP is $(curl -s "https://api.ipify.org")" >> ${logdest}
 
 while :;
 do
@@ -41,7 +38,7 @@ do
   gdip=`echo $dnsdata | cut -d ',' -f 1 | tr -d '"' | cut -d ":" -f 2`
   if [ "$gdip" != "$myip" -a "$myip" != "" ]; then
     curl -s -X PUT "https://api.godaddy.com/v1/domains/${1}/records/A/${2}" -H "Authorization: sso-key ${3}" -H "Content-Type: application/json" -d "[{\"data\": \"${myip}\"}]"
-    echo "[$(date +%D" "%H:%M" "%Z)] Changed IP on ${domain} from ${gdip} to ${myip}"
-    echo "[$(date +%D" "%H:%M" "%Z)] Changed IP on ${domain} from ${gdip} to ${myip}" >> ${logdest}
+    echo "[$(TZ=${5} date +%D" "%H:%M" "%Z)] Changed IP on ${domain} from ${gdip} to ${myip}"
+    echo "[$(TZ=${5} date +%D" "%H:%M" "%Z)] Changed IP on ${domain} from ${gdip} to ${myip}" >> ${logdest}
   fi
 done
