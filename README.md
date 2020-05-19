@@ -23,7 +23,7 @@ services:
   godaddy-ddns:
     image: parkerhemphill/godaddy-dns-updater
     container_name: godaddy-ddns
-    restart: always
+    restart: unless-stopped
     environment:
       DOMAIN: 'example.com'
       SUB_DOMAIN: 'cool-site'
