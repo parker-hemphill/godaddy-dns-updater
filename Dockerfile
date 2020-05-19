@@ -2,23 +2,19 @@
 FROM alpine:latest
 
 # Install curl
-RUN apk add --no-cache curl
-RUN apk add --no-cache bash
+RUN apk add --no-cache curl bash
 
 # Set version label
-LABEL build_version="Godaddy-DNS-Updater, Version: 1.0.6, Build-date: 18-May-2020"
+LABEL build_version="Godaddy-DNS-Updater, Version: 1.0.8, Build-date: 18-May-2020"
 LABEL maintainer=parker-hemphill
 
 # Copy convert shell scripts to /opt
-RUN echo "**** copy shell scripts to /opt ****"
 COPY godaddy_dns_update.sh /opt/
 
 # Set scripts as executable
-RUN echo "**** set shell scripts as executable ****"
 RUN chmod +rxxx /opt/godaddy_dns_update.sh
 
 # Set default docker variables
-RUN echo "**** setup default variables****"
 ENV DOMAIN=${DOMAIN:-NULL}
 ENV SUB_DOMAIN=${SUB_DOMAIN:-@}
 ENV API_KEY=${API_KEY:-NULL}
