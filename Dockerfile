@@ -19,6 +19,6 @@ ENV DOMAIN=${DOMAIN:-NULL}
 ENV SUB_DOMAIN=${SUB_DOMAIN:-@}
 ENV API_KEY=${API_KEY:-NULL}
 ENV DNS_CHECK=${DNS_CHECK:-900}
-ENV TZ=${TZ:-America/New_York}
+ENV TIME_ZONE=${TIME_ZONE:-America/New_York}
 
-CMD /opt/godaddy_dns_update.sh ${DOMAIN} ${SUB_DOMAIN} ${API_KEY} ${DNS_CHECK} ${TZ}
+CMD /opt/godaddy_dns_update.sh "${DOMAIN}" "${SUB_DOMAIN}" "${API_KEY}" "${DNS_CHECK}" "${TIME_ZONE}"

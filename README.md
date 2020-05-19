@@ -15,7 +15,7 @@
 ## Docker-compose example
 * In this example I will be monitoring and updating **cool-site.example.com**, and checking for a change to DNS every 600 seconds (10 minutes)
   * **volumes** can be omitted or mapped somewhere such as a a folder under your home directory, simply change the *left* side to point to where you'd like to save DNS update logfiles
-* Change "TZ" to match your desired timezone.  A vaild list can be found at https://www.wikiwand.com/en/List_of_tz_database_time_zones under the "TZ database name" column.  Default is "America/New_York"
+* Change "TIME_ZONE" to match your desired timezone.  A vaild list can be found at https://www.wikiwand.com/en/List_of_tz_database_time_zones under the "TZ database name" column.  Default is "America/New_York"
 ```
 #docker-compose.yaml
 version: "3"
@@ -29,7 +29,7 @@ services:
       SUB_DOMAIN: 'cool-site'
       API_KEY: 'GO_DADDY_DNS_API_KEY'
       DNS_CHECK: 600
-      TZ: America/New_York
+      TIME_ZONE: America/New_York
     volumes:
       - /tmp:/tmp
 ```
@@ -37,7 +37,7 @@ services:
 ```
 docker run -d \
   --name=godaddy-dns-updater \
-  -e TZ=America/New_York \
+  -e TIME_ZONE=America/New_York \
   -e DOMAIN=example.com \
   -e SUB_DOMAIN=cool-site \
   -e API_KEY='GO_DADDY_DNS_API_KEY' \
