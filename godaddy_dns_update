@@ -14,18 +14,15 @@ touch ${logdest} && chown ${6}:${7} ${logdest}
 
 # Check if variables are set and exit if not
 if [[ ${1} == 'NULL' ]]; then
-  echo "[$(TZ=${5} date +%D" "%H:%M" "%Z)] DOMAIN not set, exiting container"
-  echo "[$(TZ=${5} date +%D" "%H:%M" "%Z)] DOMAIN not set, exiting container" >> ${logdest}
+  echo "[$(TZ=${5} date +%D" "%H:%M" "%Z)] DOMAIN not set, exiting container"|tee -a ${logdest}
   exit 1
 fi
 if [[ ${3} == 'NULL' ]]; then
-  echo "[$(TZ=${5} date +%D" "%H:%M" "%Z)] API_KEY not set, exiting container"
-  echo "[$(TZ=${5} date +%D" "%H:%M" "%Z)] API_KEY not set, exiting container" >> ${logdest}
+  echo "[$(TZ=${5} date +%D" "%H:%M" "%Z)] API_KEY not set, exiting container"|tee -a ${logdest}
   exit 1
 fi
 
-echo -e "[$(TZ=${5} date +%D" "%H:%M" "%Z)] Monitoring records for ${domain}, checks every ${4} seconds\nCurrent external IP is $(curl -s "https://api.ipify.org")"
-echo -e "[$(TZ=${5} date +%D" "%H:%M" "%Z)] Monitoring records for ${domain}, checks every ${4} seconds\nCurrent external IP is $(curl -s "https://api.ipify.org")" >> ${logdest}
+echo -e "[$(TZ=${5} date +%D" "%H:%M" "%Z)] Monitoring records for ${domain}, checks every ${4} seconds\nCurrent external IP is $(curl -s "https://api.ipify.org")"|tee -a ${logdest}
 
 while :;do
   sleep ${4}
@@ -37,11 +34,9 @@ while :;do
   if [ "$gdip" != "$myip" -a "$myip" != "" ]; then
     update_status=$(curl -o /dev/null -w "%{http_code}\n" -s -X PUT "https://api.godaddy.com/v1/domains/${1}/records/A/${2}" -H "Authorization: sso-key ${3}" -H "Content-Type: application/json" -d "[{\"data\": \"${myip}\"}]")
     if [[ ${update_status} -eq 200 ]]; then
-      echo "[$(TZ=${5} date +%D" "%H:%M" "%Z)] Changed IP on ${domain} from ${gdip} to ${myip}"
-      echo "[$(TZ=${5} date +%D" "%H:%M" "%Z)] Changed IP on ${domain} from ${gdip} to ${myip}" >> ${logdest}
+      echo "[$(TZ=${5} date +%D" "%H:%M" "%Z)] Changed IP on ${domain} from ${gdip} to ${myip}"|tee -a ${logdest}
     else
-      echo "[$(TZ=${5} date +%D" "%H:%M" "%Z)] GoDaddy API returned ${update_status} status,  update FAILED"
-      echo "[$(TZ=${5} date +%D" "%H:%M" "%Z)] GoDaddy API returned ${update_status} status,  update FAILED" >> ${logdest}
+      echo "[$(TZ=${5} date +%D" "%H:%M" "%Z)] GoDaddy API returned ${update_status} status,  update FAILED"|tee -a ${logdest}
     fi
   fi
 done
