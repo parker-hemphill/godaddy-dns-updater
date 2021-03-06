@@ -27,7 +27,7 @@ jobs:
           echo ::set-output name=buildx_args::--platform ${DOCKER_PLATFORMS} \
             --build-arg VERSION=latest \
             --tag parkerhemphill/godaddy-dns-updater:latest \
-            --file ./Dockerfile
+            .
       -
         name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
