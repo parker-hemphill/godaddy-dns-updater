@@ -2,13 +2,13 @@ name: buildx
 
 on:
   schedule:
-    - cron: '0 10 * * *' # everyday at 10am
+    - cron: '0 9 * * *'
   pull_request:
     branches: master
   push:
     branches: master
     tags:
-      - v*
+      - *
 
 jobs:
   buildx:
@@ -24,20 +24,13 @@ jobs:
           DOCKER_IMAGE=parkerhemphill/godaddy-dns-updater
           DOCKER_PLATFORMS=linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64
           VERSION=latest
-
-          if [ "${{ github.event_name }}" = "schedule" ]; then
-            VERSION=latest
-          fi
-
-          TAGS="--tag ${DOCKER_IMAGE}:${VERSION}"
-
           echo ::set-output name=docker_image::${DOCKER_IMAGE}
           echo ::set-output name=version::${VERSION}
           echo ::set-output name=buildx_args::--platform ${DOCKER_PLATFORMS} \
             --build-arg VERSION=${VERSION} \
             --build-arg BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ') \
             --build-arg VCS_REF=${GITHUB_SHA::8} \
-            ${TAGS} .
+            --tag ${DOCKER_IMAGE}:${VERSION}" .
       -
         name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
