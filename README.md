@@ -10,7 +10,7 @@
 * 3: Container start-up and any changes to DNS record are logged inside container to **/tmp/<DOMAIN_NAME>-log**, this directory can be exported to make the logs available outside container
   
 ### Notes:
-* Added arm and arm64 image support (Add "arm64v8-latest" or "arm32v7-latest" tags as needed)
+* Added arm and arm64 image support (Docker should pull correct image automagically)
 * Required variables have a default set of NULL, the container looks for these and exits with a message of problem in the log file.  An easy way to trouble-shoot container is to map /tmp to an external directory (explained in the docker-compose and docker run example below)
 * Only required ENV variables are **DOMAIN** and **API_KEY**, everything else has valid defaults
 * ENV variables "PUID" and "PGID" can be passed to set owner of logfile to a specific user, this is useful for mapping an external directory and setting the owner to a normal user
