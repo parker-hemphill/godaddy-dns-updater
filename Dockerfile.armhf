@@ -1,5 +1,5 @@
 # Use latest alpine base image
-FROM alpine:latest
+FROM alpine:arm32v7-3.13
 
 # Install curl
 RUN apk add --no-cache curl bash tzdata
