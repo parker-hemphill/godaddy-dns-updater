@@ -25,7 +25,6 @@ jobs:
         with:
           image: ghcr.io/parker-hemphill/godaddy-dns-updater
           tags: latest
-          registry: ghcr.io
           dockerfile: Dockerfile
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_TOKEN }}
