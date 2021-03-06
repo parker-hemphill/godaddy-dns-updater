@@ -4,10 +4,6 @@ on:
   schedule:
     - cron: '0 10 * * *'
   push:
-    branches: master
-
-on:
-  push:
     branches:
       - 'master'
 
