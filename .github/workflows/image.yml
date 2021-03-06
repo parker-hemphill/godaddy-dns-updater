@@ -23,7 +23,7 @@ jobs:
         uses: mr-smithers-excellent/docker-build-push@v5
         name: Build & push Docker image
         with:
-          image: parker-hemphill/godaddy-dns-updater
+          image: ghcr.io/parker-hemphill/godaddy-dns-updater
           tags: latest
           registry: ghcr.io
           dockerfile: Dockerfile
