@@ -32,9 +32,6 @@ jobs:
         with:
           push: true
           tags: parker-hemphill/godaddy-dns-updater:latest
-          secrets: |
-            username: ${{ secrets.DOCKER_USERNAME }}
-            password: ${{ secrets.DOCKER_TOKEN }}
       -
         name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
