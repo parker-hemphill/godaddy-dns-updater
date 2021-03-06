@@ -1,4 +1,4 @@
-name: buildx
+name: ci
 
 on:
   schedule:
