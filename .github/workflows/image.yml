@@ -4,37 +4,25 @@ on:
   schedule:
     - cron: '0 10 * * *'
   pull_request:
-    branches: master
   push:
-    branches: master
-    tags:
-      - v*
 
 jobs:
   buildx:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
+      -
+        name: Checkout
+        uses: actions/checkout@v2
       -
         name: Set up QEMU
         uses: docker/setup-qemu-action@v1
       -
-        name: Prepare
-        id: prepare
-        run: |
-          DOCKER_PLATFORMS=linux/amd64,linux/arm/v7,linux/arm64
-          echo ::set-output name=docker_image::parkerhemphill/godaddy-dns-updater
-          echo ::set-output name=version::latest
-          echo ::set-output name=buildx_args::--platform ${DOCKER_PLATFORMS} \
-            --build-arg VERSION=latest \
-            --tag parkerhemphill/godaddy-dns-updater:latest \
-            --file ./test/Dockerfile ./test
-      -
         name: Set up Docker Buildx
+        id: buildx
         uses: docker/setup-buildx-action@v1
       -
-        name: Docker Buildx (build)
-        run: |
-          docker buildx build --output "type=image,push=false" "${{ steps.prepare.outputs.buildx_args }}"
+        name: Available platforms
+        run: echo ${{ steps.buildx.outputs.platforms }}
       -
         name: Login to DockerHub
         if: success() && github.event_name != 'pull_request'
@@ -43,12 +31,5 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
       -
-        name: Docker Buildx (push)
-        if: success() && github.event_name != 'pull_request'
-        run: |
-          docker buildx build --output "type=image,push=true" ${{ steps.prepare.outputs.buildx_args }}
-      -
-        name: Inspect image
-        if: always() && github.event_name != 'pull_request'
-        run: |
-          docker buildx imagetools inspect ${{ steps.prepare.outputs.docker_image }}:${{ steps.prepare.outputs.version }}
+        name: Build
+        run: docker buildx --output type=image,push=true --platform linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64 --file ./Dockerfile
