@@ -11,16 +11,16 @@ jobs:
   docker:
     runs-on: ubuntu-20.04
     steps:
-
-  - uses: actions/checkout@v2
+  -
+    uses: actions/checkout@v2
     name: Check out code
-
-  - uses: docker/setup-qemu-action@v1
+  -
+    uses: docker/setup-qemu-action@v1
     name: Set up QEMU
     with:
       platforms: linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64
-
-  - uses: mr-smithers-excellent/docker-build-push@v5
+  -
+    uses: mr-smithers-excellent/docker-build-push@v5
     name: Build & push Docker image
     with:
       image: repo/image
