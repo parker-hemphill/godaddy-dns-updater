@@ -22,7 +22,7 @@ jobs:
         id: prepare
         run: |
           DOCKER_IMAGE=parker-hemphill/godaddy-dns-updater
-          DOCKER_PLATFORMS=linux/amd64,linux/arm/v7
+          DOCKER_PLATFORMS=linux/amd64
           VERSION=latest
 
           if [[ $GITHUB_REF == refs/tags/* ]]; then
