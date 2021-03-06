@@ -64,4 +64,4 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${DOCKER_IMAGE}:${VERSION}
+          tags: parker-hemphill/godaddy-dns-updater:latest
