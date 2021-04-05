@@ -1,42 +1,103 @@
 #!/bin/bash
 
-# Set domain or subdomain names for log
-if [[ ${2} == '@' ]]; then
-  domain=${1}
-else
-  domain=${2}.${1}
-fi
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+readonly DOMAIN="${1}"
+readonly SUBDOMAIN="${2}"
+readonly API_KEY="${3}"
+readonly DNS_CHECK="${4}"
+readonly TIME_ZONE="${5}"
+readonly PUID="${6}"
+readonly PGID="${7}"
 
-logdest="/tmp/${domain}-log"
-export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-
-touch ${logdest} && chown ${6}:${7} ${logdest}
-
-# Check if variables are set and exit if not
-if [[ ${1} == 'NULL' ]]; then
-  echo "[$(TZ=${5} date +%D" "%H:%M" "%Z)] DOMAIN not set, exiting container"|tee -a ${logdest}
-  exit 1
-fi
-if [[ ${3} == 'NULL' ]]; then
-  echo "[$(TZ=${5} date +%D" "%H:%M" "%Z)] API_KEY not set, exiting container"|tee -a ${logdest}
-  exit 1
-fi
-
-echo -e "[$(TZ=${5} date +%D" "%H:%M" "%Z)] Monitoring records for ${domain}, checks every ${4} seconds\nCurrent external IP is $(curl -s "https://api.ipify.org")"|tee -a ${logdest}
-
-while :;do
-  sleep ${4}
-  #Random sleep so multiple site updates doesn't cause API to timeout
-  sleep $((RANDOM % 15 + 1))
-  myip=`curl -s "https://api.ipify.org"`
-  dnsdata=`curl -s -X GET -H "Authorization: sso-key ${3}" "https://api.godaddy.com/v1/domains/${1}/records/A/${2}"`
-  gdip=`echo $dnsdata | cut -d ',' -f 1 | tr -d '"' | cut -d ":" -f 2`
-  if [ "$gdip" != "$myip" -a "$myip" != "" ]; then
-    update_status=$(curl -o /dev/null -w "%{http_code}\n" -s -X PUT "https://api.godaddy.com/v1/domains/${1}/records/A/${2}" -H "Authorization: sso-key ${3}" -H "Content-Type: application/json" -d "[{\"data\": \"${myip}\"}]")
-    if [[ ${update_status} -eq 200 ]]; then
-      echo "[$(TZ=${5} date +%D" "%H:%M" "%Z)] Changed IP on ${domain} from ${gdip} to ${myip}"|tee -a ${logdest}
-    else
-      echo "[$(TZ=${5} date +%D" "%H:%M" "%Z)] GoDaddy API returned ${update_status} status,  update FAILED"|tee -a ${logdest}
-    fi
+# Check if domain variable is set and exit if not
+check_domain(){
+  if [[ "${DOMAIN}" == 'NULL' ]]; then
+    echo "[$(TZ=${TIME_ZONE} date +%D" "%H:%M" "%Z)] DOMAIN not set, exiting container"
+    exit 1
   fi
-done
+}
+
+# Check if api_key variable is set and exit if not
+check_api_key(){
+  if [[ "${API_KEY}" == 'NULL' ]]; then
+    echo "[$(TZ=${TIME_ZONE} date +%D" "%H:%M" "%Z)] API_KEY not set, exiting container"
+    exit 1
+  fi
+}
+
+# Set domain or subdomain to update
+get_domain_to_update(){
+  if [[ "${SUBDOMAIN}" == '@' ]]; then
+    echo "${DOMAIN}"
+  else
+    echo "${SUBDOMAIN}.${DOMAIN}"
+  fi
+}
+
+# Exponential backoff retry function
+backoff_retry_function(){
+  local max_attempts=${ATTEMPTS-5}
+  local timeout=${TIMEOUT-1}
+  local attempt=0
+  local exitCode=0
+
+  while [[ ${attempt} < ${max_attempts} ]]; do
+    "$@"
+    exit_code=$?
+
+    if [[ ${exit_code} == 0 ]]; then
+      break
+    fi
+
+    echo "$@ command failed.  Retrying in ${timeout} seconds" 1>&2
+    sleep ${timeout}
+    attempt=$(( attempt + 1 ))
+    timeout=$(( timeout * 2 ))
+  done
+
+  if [[ ${exit_code} != 0 ]]; then
+    echo "Command: ($@) FAILED" 1>&2
+  fi
+
+  return ${exit_code}
+}
+
+monitor_and_update_domain(){
+  echo -e "[$(TZ=${TIME_ZONE} date +%D" "%H:%M" "%Z)] Monitoring records for ${DOMAIN}, checks every ${DNS_CHECK} seconds\nCurrent external IP is $(curl -s "https://api.ipify.org")"|tee -a ${logdest}
+  while :; do
+    domain_dns_ip=$(dig +short ${domain_to_update})
+    external_ip=$(backoff_retry_function curl -s "https://api.ipify.org")
+    if [[ "$?" != 0 ]]; then
+      echo "Unable to get external ip address"
+      exit 1
+    fi
+    if [[ "${domain_dns_ip}" != "${external_ip}" ]]; then
+      domain_ip_raw="$(curl -s -X GET -H "Authorization: sso-key ${API_KEY}" "https://api.godaddy.com/v1/domains/${DOMAIN}/records/A/${SUBDOMAIN}")"
+      domain_ip="$(echo "${domain_ip_raw}" | cut -d ',' -f 1 | tr -d '"' | cut -d ":" -f 2)"
+      if [[ "${domain_ip}" != "${external_ip}" ]]; then
+        update_status=$(curl -o /dev/null -w "%{http_code}\n" -s -X PUT "https://api.godaddy.com/v1/domains/${DOMAIN}/records/A/${SUBDOMAIN}" -H "Authorization: sso-key ${API_KEY}" -H "Content-Type: application/json" -d "[{\"data\": \"${external_ip}\"}]")
+        if [[ ${update_status} -eq 200 ]]; then
+          echo "[$(TZ=${TIME_ZONE} date +%D" "%H:%M" "%Z)] Changed IP on ${DOMAIN} from ${domain_ip} to ${external_ip}"|tee -a ${logdest}
+        else
+          echo "[$(TZ=${TIME_ZONE} date +%D" "%H:%M" "%Z)] GoDaddy API returned ${update_status} status,  update FAILED"|tee -a ${logdest}
+        fi
+      else
+        echo "[$(TZ=${TIME_ZONE} date +%D" "%H:%M" "%Z)] External DNS for ${DOMAIN} resolves to ${external_ip}, no update needed"|tee -a ${logdest}
+      fi
+    else
+      echo "[$(TZ=${TIME_ZONE} date +%D" "%H:%M" "%Z)] External DNS for ${DOMAIN} resolves to ${external_ip}, no update needed"|tee -a ${logdest}
+    fi
+    sleep ${DNS_CHECK}
+  done
+}
+
+main(){
+  check_domain
+  check_api_key
+  readonly domain_to_update="$(get_domain_to_update)"
+  readonly logdest=/tmp/${domain_to_update}.log
+  touch ${logdest} && chown ${PUID}:${PGID} ${logdest}
+  monitor_and_update_domain
+}
+
+main
