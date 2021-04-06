@@ -95,9 +95,9 @@ main(){
   check_domain
   check_api_key
   readonly domain_to_update="$(get_domain_to_update)"
-  readonly logdest=/tmp/${domain_to_update}.log
-  touch ${logdest} && chown ${PUID}:${PGID}
-  chmod a+r ${logdest}
+  readonly logdest="/tmp/${domain_to_update}.log"
+  touch "${logdest}" && chown ${PUID}:${PGID} "${logdest}"
+  chmod a+r "${logdest}"
   monitor_and_update_domain
 }
 
