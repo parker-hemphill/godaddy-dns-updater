@@ -5,14 +5,18 @@ readonly DOMAIN="${1}"
 readonly SUBDOMAIN="${2}"
 readonly API_KEY="${3}"
 readonly DNS_CHECK="${4}"
-readonly TIME_ZONE="${5}"
-readonly PUID="${6}"
-readonly PGID="${7}"
+readonly PUID="${5}"
+readonly PGID="${6}"
+if [[ -z "${7}" ]]; then
+  echo "TZ variable not set, defaulting to UTC"
+else
+  cp /usr/share/zoneinfo/${7} /etc/localtime
+fi
 
 # Check if domain variable is set and exit if not
 check_domain(){
   if [[ "${DOMAIN}" == 'NULL' ]]; then
-    echo "[$(TZ=${TIME_ZONE} date +%D" "%H:%M" "%Z)] DOMAIN not set, exiting container"
+    echo "[$(date +%D" "%H:%M" "%Z)] DOMAIN not set, exiting container"
     exit 1
   fi
 }
@@ -20,7 +24,7 @@ check_domain(){
 # Check if api_key variable is set and exit if not
 check_api_key(){
   if [[ "${API_KEY}" == 'NULL' ]]; then
-    echo "[$(TZ=${TIME_ZONE} date +%D" "%H:%M" "%Z)] API_KEY not set, exiting container"
+    echo "[$(date +%D" "%H:%M" "%Z)] API_KEY not set, exiting container"
     exit 1
   fi
 }
@@ -63,7 +67,7 @@ backoff_retry_function(){
 }
 
 monitor_and_update_domain(){
-  echo -e "[$(TZ=${TIME_ZONE} date +%D" "%H:%M" "%Z)] Monitoring records for ${domain_to_update}, checks every ${DNS_CHECK} seconds\nCurrent external IP is $(curl -s "https://api.ipify.org")"|tee -a ${logdest}
+  echo -e "[$(date +%D" "%H:%M" "%Z)] Monitoring records for ${domain_to_update}, checks every ${DNS_CHECK} seconds\nCurrent external IP is $(curl -s "https://api.ipify.org")"|tee -a ${logdest}
   while :; do
     domain_dns_ip=$(dig +short ${domain_to_update})
     external_ip=$(backoff_retry_function curl -s "https://api.ipify.org")
@@ -77,15 +81,15 @@ monitor_and_update_domain(){
       if [[ "${domain_ip}" != "${external_ip}" ]]; then
         update_status=$(curl -o /dev/null -w "%{http_code}\n" -s -X PUT "https://api.godaddy.com/v1/domains/${DOMAIN}/records/A/${SUBDOMAIN}" -H "Authorization: sso-key ${API_KEY}" -H "Content-Type: application/json" -d "[{\"data\": \"${external_ip}\"}]")
         if [[ ${update_status} -eq 200 ]]; then
-          echo "[$(TZ=${TIME_ZONE} date +%D" "%H:%M" "%Z)] Changed IP on ${domain_to_update} from ${domain_ip} to ${external_ip}"|tee -a ${logdest}
+          echo "[$(date +%D" "%H:%M" "%Z)] Changed IP on ${domain_to_update} from ${domain_ip} to ${external_ip}"|tee -a ${logdest}
         else
-          echo "[$(TZ=${TIME_ZONE} date +%D" "%H:%M" "%Z)] GoDaddy API returned ${update_status} status,  update FAILED"|tee -a ${logdest}
+          echo "[$(date +%D" "%H:%M" "%Z)] GoDaddy API returned ${update_status} status,  update FAILED"|tee -a ${logdest}
         fi
       else
-        echo "[$(TZ=${TIME_ZONE} date +%D" "%H:%M" "%Z)] External DNS for ${domain_to_update} resolves to ${external_ip}, no update needed"|tee -a ${logdest}
+        echo "[$(date +%D" "%H:%M" "%Z)] External DNS for ${domain_to_update} resolves to ${external_ip}, no update needed"|tee -a ${logdest}
       fi
     else
-      echo "[$(TZ=${TIME_ZONE} date +%D" "%H:%M" "%Z)] External DNS for ${domain_to_update} resolves to ${external_ip}, no update needed"|tee -a ${logdest}
+      echo "[$(date +%D" "%H:%M" "%Z)] External DNS for ${domain_to_update} resolves to ${external_ip}, no update needed"|tee -a ${logdest}
     fi
     sleep ${DNS_CHECK}
   done
