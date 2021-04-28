@@ -2,7 +2,7 @@
 
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 readonly DOMAIN="${1}"
-readonly SUBDOMAIN="$(printf "${2}"| sed -r 's/\s+//g'))
+readonly SUBDOMAIN="$(printf "${2}"| sed -r 's/\s+//g'))"
 readonly API_KEY="${3}"
 readonly DNS_CHECK="${4}"
 readonly PUID="${5}"
