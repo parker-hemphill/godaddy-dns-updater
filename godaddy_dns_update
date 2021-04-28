@@ -27,7 +27,7 @@ validate_api_key(){
     echo "[$(date +%D" "%H:%M" "%Z)] API_KEY not set, exiting container"|tee -a ${logdest}
     exit 1
   else
-    echo ""[$(date +%D" "%H:%M" "%Z)] API_KEY set"|tee -a ${logdest}
+    echo "[$(date +%D" "%H:%M" "%Z)] API_KEY set"|tee -a ${logdest}
   fi
 }
 
@@ -37,9 +37,11 @@ validate_subdomain(){
   elif [[ "${SUBDOMAIN}" == '*' ]]; then
     echo "[$(date +%D" "%H:%M" "%Z)] Error: SUBDOMAIN should be omitted for wildcard updates.  Point subdomains to '@' in godaddy DNS and update domain with this container"|tee -a ${logdest}
     sleep 30
-    return 1
+    exit 1
   else
     echo "[$(date +%D" "%H:%M" "%Z)] Error: SUBDOMAIN is invalid, valid choices are alphanumeric"|tee -a ${logdest}
+    sleep 30
+    exit 1
   fi
 }
 
@@ -55,8 +57,8 @@ get_domain_to_update(){
 monitor_and_update_domain(){
   echo -e "[$(date +%D" "%H:%M" "%Z)] Monitoring records for ${domain_to_update}, checks every ${DNS_CHECK} seconds\nCurrent external IP is $(curl -s "https://api.ipify.org")"|tee -a ${logdest}
   while :; do
-    domain_dns_ip=$(dig +short "${domain_to_update}")
-    external_ip=$(curl -s "https://api.ipify.org")
+    domain_dns_ip=$(dig +short ${domain_to_update})
+    external_ip=$(curl -s https://api.ipify.org)
     if [[ "$?" != 0 ]]; then
       echo "Unable to get external ip address"
       exit 1
@@ -77,7 +79,7 @@ monitor_and_update_domain(){
     else
       echo "[$(date +%D" "%H:%M" "%Z)] External DNS for ${domain_to_update} resolves to ${external_ip}, no update needed"|tee -a ${logdest}
     fi
-    sleep ${DNS_CHECK}
+    sleep "${DNS_CHECK}"
   done
 }
 
@@ -86,7 +88,7 @@ main(){
   validate_api_key
   validate_subdomain
   readonly domain_to_update="$(get_domain_to_update)"
-  readonly logdest="/tmp/${domain_to_update,,}.log"
+  readonly logdest="/tmp/${domain_to_update}.log"
   touch "${logdest}" && chown ${PUID}:${PGID} "${logdest}"
   chmod a+r "${logdest}"
   monitor_and_update_domain
