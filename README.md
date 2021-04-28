@@ -7,7 +7,7 @@
 * 2: Once **DNS_CHECK** time has passed, container waits between 1 and 15 seconds (Randomized each time the loop runs so that you can run multiple containers and not cause an API time-out)
   * Curl makes a call to **https://api.ipify.org** to determine current external IP address of host.
   * Curl then makes a call to GoDaddy DNS API to get current record for sub-domain/domain, if that IP address doesn't match external IP there is a curl POST pushed to update the DNS record
-* 3: Container start-up and any changes to DNS record are logged inside container to **/tmp/<DOMAIN_NAME>-log**, this directory can be exported to make the logs available outside container
+* 3: Container start-up and any changes to DNS record are logged inside container to **/tmp/<DOMAIN_NAME>.log**, this directory can be exported to make the logs available outside container
   
 ### Notes:
 * Added arm and arm64 image support (Docker should pull correct image automagically)
@@ -52,7 +52,7 @@ docker run -d \
 * Shell access while the container is running:<br>
  `docker exec -it godaddy-dns-updater /bin/bash`
 * To see log of DNS updates:<br>
- `docker exec -it godaddy-dns-updater cat /tmp/*-log` 
+ `docker exec -it godaddy-dns-updater cat /tmp/*.log` 
 * Container version number:<br>
  `docker inspect -f '{{ index .Config.Labels "build_version" }}' godaddy-dns-updater`
 * Image version number:<br>
