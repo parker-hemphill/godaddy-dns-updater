@@ -5,7 +5,7 @@ FROM alpine:latest
 RUN apk add --no-cache curl bash tzdata bind-tools
 
 # Set version label
-LABEL build_version="Godaddy-DNS-Updater, Version: 1.1.14, Build-date: 2021-Apr-28"
+LABEL build_version="Godaddy-DNS-Updater, Version: 1.2.0, Build-date: 2022-Nov-19"
 LABEL maintainer=parker-hemphill
 
 # Copy convert shell scripts to /opt
@@ -18,9 +18,10 @@ RUN chmod +rxxx /opt/godaddy_dns_update
 ENV DOMAIN=${DOMAIN:-NULL}
 ENV SUB_DOMAIN=${SUB_DOMAIN:-@}
 ENV API_KEY=${API_KEY:-NULL}
+ENV API_SECRET=${API_SECRET:-NULL}
 ENV DNS_CHECK=${DNS_CHECK:-900}
 ENV TZ=${TZ:-America/New_York}
 ENV PUID=${PUID:-0}
 ENV PGID=${PGID:-0}
 
-CMD /opt/godaddy_dns_update ${DOMAIN} ${SUB_DOMAIN} ${API_KEY} ${DNS_CHECK} ${PUID} ${PGID} ${TZ}
+CMD /opt/godaddy_dns_update ${DOMAIN} ${SUB_DOMAIN} ${API_KEY} ${API_SECRET} ${DNS_CHECK} ${PUID} ${PGID} ${TZ}
