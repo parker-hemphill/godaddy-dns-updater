@@ -11,6 +11,7 @@
   
 ### Notes:
 * Added arm and arm64 image support (Docker should pull correct image automagically)
+* Multiple subdomains can be updated by appending with "|", i.e. set  SUB_DOMAIN to "cool-site|other-subdomain"
 * Required variables have a default set of NULL, the container looks for these and exits with a message of problem in the log file.  An easy way to trouble-shoot container is to map /tmp to an external directory (explained in the docker-compose and docker run example below)
 * Only required ENV variables are **DOMAIN**, **API_KEY**, and **API_SECRET** (Or combine API_KEY:API_SECRET in API_KEY variable).  Everything else has valid defaults
 * ENV variables "PUID" and "PGID" can be passed to set owner of logfile to a specific user, this is useful for mapping an external directory and setting the owner to a normal user
