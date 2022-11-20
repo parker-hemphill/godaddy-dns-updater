@@ -22,7 +22,12 @@ else
   fi
 fi
 
-# Setup main logfile
+# Logger function
+logger(){
+  printf '%s\n' "[$(date +%D" "%H:%M" "%Z)]: ${1}"|tee -a ${logdest}
+}
+
+# Setup logfile
 setup_logger(){
   readonly logdest='/tmp/godaddy_dns_update.log'
   touch "${logdest}" && chown ${puid}:${pgid} "${logdest}"
@@ -32,7 +37,7 @@ setup_logger(){
 # Check if domain variable is set and exit if not
 validate_domain(){
   if [[ "${domain}" == 'NULL' ]]; then
-    echo "[$(date +%D" "%H:%M" "%Z)] domain not set, exiting container"|tee -a ${logdest}
+    logger "Domain not set, exiting container"
     exit 1
   fi
 }
@@ -40,25 +45,21 @@ validate_domain(){
 # Check if api_key variable is set and exit if not
 validate_api_key(){
   if [[ "${api_key}" == 'NULL' ]]; then
-    echo "[$(date +%D" "%H:%M" "%Z)] api_key not set, exiting container"|tee -a ${logdest}
+    logger "Api_key not set, exiting container"
     exit 1
-  else
-    echo "[$(date +%D" "%H:%M" "%Z)] api_key set"|tee -a ${logdest}
   fi
 }
 
 # Check if api_secret variable is set and exit if not
 validate_api_secret(){
   if [[ "${api_secret}" == 'NULL' ]]; then
-    echo "[$(date +%D" "%H:%M" "%Z)] api_secret not set, either add variable to docker or append to \"api_key\" with \":\""|tee -a ${logdest}
-  else
-    echo "[$(date +%D" "%H:%M" "%Z)] api_secret set"|tee -a ${logdest}
+    logger "api_secret not set, either add variable to docker or append to \"api_key\" with \":\""
   fi
 }
 
 validate_subdomain(){
   if [[ "${subdomain}" == '*' ]]; then
-    echo "[$(date +%D" "%H:%M" "%Z)] Error: subdomain should be omitted for wildcard updates.  Point subdomains to '@' in godaddy DNS and update domain with this container"|tee -a ${logdest}
+    logger "Error: subdomain should be omitted for wildcard updates.  Point subdomains to '@' in godaddy DNS and update domain with this container"
     sleep 30
     exit 1
   fi
@@ -82,27 +83,35 @@ monitor_and_update_domain(){
     for domain_to_update in "${domain_array[@]}"; do
       domain_dns_ip=$(dig +short "${domain_to_update}")
       if ! external_ip=$(curl -s https://api.ipify.org); then
-        echo "Unable to get external ip address"
+        logger "Unable to get external ip address"
         exit 1
       fi
+      if [[ "${subdomain}" == '@' ]]; then
+        domain_name="${domain}"
+      else
+        domain_name="${domain_to_update}.${domain}"
+      fi
       if [[ "${domain_dns_ip}" != "${external_ip}" ]]; then
-        domain_ip_raw="$(curl -s -X GET -H "Authorization: sso-key ${api_auth_string}" "https://api.godaddy.com/v1/domains/${domain}/records/A/${domain_to_update}")"
-        domain_ip="$(echo "${domain_ip_raw}" | cut -d ',' -f 1 | tr -d '"' | cut -d ":" -f 2)"
+        if [[ "${subdomain}" == '@' ]]; then
+          domain_to_update='@'
+        fi
+        domain_ip="$(curl -s -X GET -H "Authorization: sso-key ${api_auth_string}" "https://api.godaddy.com/v1/domains/${domain}/records/A/${domain_to_update}"|awk -F'"' '{print $4}')"
         if [[ "${domain_ip}" != "${external_ip}" ]]; then
           update_status=$(curl -o /dev/null -w "%{http_code}\n" -s -X PUT "https://api.godaddy.com/v1/domains/${domain}/records/A/${domain_to_update}" -H "Authorization: sso-key ${api_auth_string}" -H "Content-Type: application/json" -d "[{\"data\": \"${external_ip}\"}]")
           if [[ ${update_status} -eq 200 ]]; then
-            echo "[$(date +%D" "%H:%M" "%Z)] Changed IP on ${domain_to_update} from ${domain_ip} to ${external_ip}"|tee -a "${logdest}"
+            logger "Changed IP on ${domain_name} from ${domain_ip} to ${external_ip}"
           else
-            echo "[$(date +%D" "%H:%M" "%Z)] GoDaddy API returned ${update_status} status,  update FAILED"|tee -a "${logdest}"
+            logger "GoDaddy API returned ${update_status} status for ${domain_name}, update FAILED"
           fi
         else
-          echo "[$(date +%D" "%H:%M" "%Z)] External DNS for ${domain_to_update} resolves to ${external_ip}, no update needed"|tee -a "${logdest}"
+          logger "External DNS for ${domain_name} resolves to ${external_ip}, no update needed"
         fi
       else
-        echo "[$(date +%D" "%H:%M" "%Z)] External DNS for ${domain_to_update} resolves to ${external_ip}, no update needed"|tee -a "${logdest}"
+        logger "External DNS for ${domain_name} resolves to ${external_ip}, no update needed"
       fi
-      sleep 5
+      sleep 1
     done
+    printf '%s\n' "Next check at $(date +%D" "%H:%M" "%Z)"
     sleep ${dns_check}
   done
 }
