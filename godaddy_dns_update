@@ -111,7 +111,7 @@ monitor_and_update_domain(){
       fi
       sleep 1
     done
-    printf '%s\n' "Next check at $(date +%D" "%H:%M" "%Z)"
+    printf '%s\n' "Next check at $(date +%D" "%H:%M" "%Z -d "@$(( $(date +%s) + ${dns_check}))")"
     sleep ${dns_check}
   done
 }
