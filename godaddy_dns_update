@@ -8,8 +8,10 @@ readonly API_SECRET="${4}"
 readonly DNS_CHECK="${5}"
 readonly PUID="${6}"
 readonly PGID="${7}"
-if [[ -z "${8}" ]]; then
+readonly TZ="${7}"
+if [[ "${TZ}" == 'UNSET' ]]; then
   echo "TZ variable not set, defaulting to UTC"
+  cp /usr/share/zoneinfo/UTC /etc/localtime
 else
   cp /usr/share/zoneinfo/${8} /etc/localtime
 fi
