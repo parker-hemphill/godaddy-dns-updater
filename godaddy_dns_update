@@ -4,13 +4,14 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 readonly DOMAIN="${1}"
 readonly SUBDOMAIN="${2}"
 readonly API_KEY="${3}"
-readonly DNS_CHECK="${4}"
-readonly PUID="${5}"
-readonly PGID="${6}"
-if [[ -z "${7}" ]]; then
+readonly API_SECRET="${4}"
+readonly DNS_CHECK="${5}"
+readonly PUID="${6}"
+readonly PGID="${7}"
+if [[ -z "${8}" ]]; then
   echo "TZ variable not set, defaulting to UTC"
 else
-  cp /usr/share/zoneinfo/${7} /etc/localtime
+  cp /usr/share/zoneinfo/${8} /etc/localtime
 fi
 
 # Check if domain variable is set and exit if not
@@ -31,6 +32,15 @@ validate_api_key(){
   fi
 }
 
+# Check if api_secret variable is set and exit if not
+validate_api_secret(){
+  if [[ "${API_SECRET}" == 'NULL' ]]; then
+    echo "[$(date +%D" "%H:%M" "%Z)] API_SECRET not set, either add variable to docker or append to \"API_KEY\" with \":\""|tee -a ${logdest}
+  else
+    echo "[$(date +%D" "%H:%M" "%Z)] API_SECRET set"|tee -a ${logdest}
+  fi
+}
+
 validate_subdomain(){
   if [[ "${SUBDOMAIN}" == '*' ]]; then
     echo "[$(date +%D" "%H:%M" "%Z)] Error: SUBDOMAIN should be omitted for wildcard updates.  Point subdomains to '@' in godaddy DNS and update domain with this container"|tee -a ${logdest}
@@ -39,41 +49,46 @@ validate_subdomain(){
   fi
 }
 
-# Set domain or subdomain to update
-get_domain_to_update(){
-  if [[ "${SUBDOMAIN}" == '@' ]]; then
-    echo "${DOMAIN}"
-  else
-    echo "${SUBDOMAIN}.${DOMAIN}"
-  fi
-}
-
 monitor_and_update_domain(){
   echo -e "[$(date +%D" "%H:%M" "%Z)] Monitoring records for ${domain_to_update}, checks every ${DNS_CHECK} seconds\nCurrent external IP is $(curl -s "https://api.ipify.org")"|tee -a ${logdest}
+  if [[ "${SUBDOMAIN}" == '@' ]]; then
+    local -ra domain_array+=("${DOMAIN}")
+  else
+    IFS='|' read -ra subdomain_array <<< "${SUBDOMAIN}"
+    for sub_domain in ${subdomain_array[@]}; do
+      domain_array+=("${sub_domain}.${DOMAIN}")
+    done
+  fi
   while :; do
-    domain_dns_ip=$(dig +short "${domain_to_update}")
-    external_ip=$(curl -s https://api.ipify.org)
-    if [[ "$?" != 0 ]]; then
-      echo "Unable to get external ip address"
-      exit 1
-    fi
-    if [[ "${domain_dns_ip}" != "${external_ip}" ]]; then
-      domain_ip_raw="$(curl -s -X GET -H "Authorization: sso-key ${API_KEY}" "https://api.godaddy.com/v1/domains/${DOMAIN}/records/A/${SUBDOMAIN}")"
-      domain_ip="$(echo "${domain_ip_raw}" | cut -d ',' -f 1 | tr -d '"' | cut -d ":" -f 2)"
-      if [[ "${domain_ip}" != "${external_ip}" ]]; then
-        update_status=$(curl -o /dev/null -w "%{http_code}\n" -s -X PUT "https://api.godaddy.com/v1/domains/${DOMAIN}/records/A/${SUBDOMAIN}" -H "Authorization: sso-key ${API_KEY}" -H "Content-Type: application/json" -d "[{\"data\": \"${external_ip}\"}]")
-        if [[ ${update_status} -eq 200 ]]; then
-          echo "[$(date +%D" "%H:%M" "%Z)] Changed IP on ${domain_to_update} from ${domain_ip} to ${external_ip}"|tee -a ${logdest}
+    for domain_to_update in "${domain_array[@]}"; do
+      domain_dns_ip=$(dig +short "${domain_to_update}")
+      if ! external_ip=$(curl -s https://api.ipify.org); then
+        echo "Unable to get external ip address"
+        exit 1
+      fi
+      if [[ "${domain_dns_ip}" != "${external_ip}" ]]; then
+        if [[ "${API_SECRET}" == 'NULL' ]]; then
+          domain_ip_raw="$(curl -s -X GET -H "Authorization: sso-key ${API_KEY}" "https://api.godaddy.com/v1/domains/${DOMAIN}/records/A/${SUBDOMAIN}")"
         else
-          echo "[$(date +%D" "%H:%M" "%Z)] GoDaddy API returned ${update_status} status,  update FAILED"|tee -a ${logdest}
+          domain_ip_raw="$(curl -s -X GET -H "Authorization: sso-key ${API_KEY}:${API_SECRET}" "https://api.godaddy.com/v1/domains/${DOMAIN}/records/A/${SUBDOMAIN}")"
+        fi
+        domain_ip="$(echo "${domain_ip_raw}" | cut -d ',' -f 1 | tr -d '"' | cut -d ":" -f 2)"
+        if [[ "${domain_ip}" != "${external_ip}" ]]; then
+          update_status=$(curl -o /dev/null -w "%{http_code}\n" -s -X PUT "https://api.godaddy.com/v1/domains/${DOMAIN}/records/A/${SUBDOMAIN}" -H "Authorization: sso-key ${API_KEY}" -H "Content-Type: application/json" -d "[{\"data\": \"${external_ip}\"}]")
+          if [[ ${update_status} -eq 200 ]]; then
+            echo "[$(date +%D" "%H:%M" "%Z)] Changed IP on ${domain_to_update} from ${domain_ip} to ${external_ip}"|tee -a ${logdest}
+          else
+            echo "[$(date +%D" "%H:%M" "%Z)] GoDaddy API returned ${update_status} status,  update FAILED"|tee -a ${logdest}
+          fi
+        else
+          echo "[$(date +%D" "%H:%M" "%Z)] External DNS for ${domain_to_update} resolves to ${external_ip}, no update needed"|tee -a ${logdest}
         fi
       else
         echo "[$(date +%D" "%H:%M" "%Z)] External DNS for ${domain_to_update} resolves to ${external_ip}, no update needed"|tee -a ${logdest}
       fi
-    else
-      echo "[$(date +%D" "%H:%M" "%Z)] External DNS for ${domain_to_update} resolves to ${external_ip}, no update needed"|tee -a ${logdest}
-    fi
-    sleep "${DNS_CHECK}"
+      sleep 5
+    done
+    sleep ${DNS_CHECK}
   done
 }
 
