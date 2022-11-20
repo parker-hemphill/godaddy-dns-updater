@@ -50,7 +50,6 @@ validate_subdomain(){
 }
 
 monitor_and_update_domain(){
-  echo -e "[$(date +%D" "%H:%M" "%Z)] Monitoring records for ${domain_to_update}, checks every ${DNS_CHECK} seconds\nCurrent external IP is $(curl -s "https://api.ipify.org")"|tee -a ${logdest}
   if [[ "${SUBDOMAIN}" == '@' ]]; then
     local -ra domain_array+=("${DOMAIN}")
   else
@@ -59,6 +58,14 @@ monitor_and_update_domain(){
       domain_array+=("${sub_domain}.${DOMAIN}")
     done
   fi
+  local -r logdest='/tmp/godaddy_dns_update.log'
+  touch "${logdest}" && chown ${PUID}:${PGID} "${logdest}"
+  chmod a+r "${logdest}" 
+  for domain_to_update in "${domain_array[@]}"; do
+    touch "/tmp/${domain_to_update}.log" && chown ${PUID}:${PGID} "/tmp/${domain_to_update}.log"
+    chmod a+r "/tmp/${domain_to_update}.log"
+      echo -e "[$(date +%D" "%H:%M" "%Z)] Monitoring records for ${domain_to_update}, checks every ${DNS_CHECK} seconds\nCurrent external IP is $(curl -s "https://api.ipify.org")"|tee -a /tmp/${domain_to_update}.log
+  done
   while :; do
     for domain_to_update in "${domain_array[@]}"; do
       domain_dns_ip=$(dig +short "${domain_to_update}")
@@ -96,10 +103,6 @@ main(){
   validate_domain
   validate_api_key
   validate_subdomain
-  readonly domain_to_update="$(get_domain_to_update)"
-  readonly logdest="/tmp/${domain_to_update}.log"
-  touch "${logdest}" && chown ${PUID}:${PGID} "${logdest}"
-  chmod a+r "${logdest}"
   monitor_and_update_domain
 }
 
