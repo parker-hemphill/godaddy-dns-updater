@@ -5,7 +5,7 @@ FROM alpine:latest
 RUN apk add --no-cache curl bash tzdata bind-tools
 
 # Set version label
-LABEL build_version="Godaddy-DNS-Updater, Version: 1.2.1, Build-date: 2022-Nov-19"
+LABEL build_version="Godaddy-DNS-Updater, Version: 1.2.2, Build-date: 2024-Mar-24"
 LABEL maintainer=parker-hemphill
 
 # Copy convert shell scripts to /opt

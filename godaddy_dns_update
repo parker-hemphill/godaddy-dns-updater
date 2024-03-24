@@ -10,14 +10,14 @@ readonly puid="${6}"
 readonly pgid="${7}"
 readonly tz="${8}"
 if [[ "${tz}" == 'NULL' ]]; then
-  echo "TZ variable not set, defaulting to UTC"
+  printf '%s\n' "TZ variable not set, defaulting to UTC"
   cp /usr/share/zoneinfo/UTC /etc/localtime
 else
   if ! ls "/usr/share/zoneinfo/${tz}" >/dev/null 2>&1; then
-    echo "Invalid TZ variable set, defaulting to UTC"
+    printf '%s\n' "Invalid TZ variable set, defaulting to UTC"
     cp /usr/share/zoneinfo/UTC /etc/localtime
   else
-    echo "Setting timezone to ${tz}"
+    printf '%s\n' "Setting timezone to ${tz}"
     cp /usr/share/zoneinfo/${tz} /etc/localtime
   fi
 fi
@@ -29,7 +29,7 @@ logger(){
 
 # Setup logfile
 setup_logger(){
-  readonly logdest='/tmp/godaddy_dns_update.log'
+  readonly logdest='/tmp/godaddy_dns_update-${domain}.log'
   touch "${logdest}" && chown ${puid}:${pgid} "${logdest}"
   chmod a+r "${logdest}"
 }
@@ -38,6 +38,7 @@ setup_logger(){
 validate_domain(){
   if [[ "${domain}" == 'NULL' ]]; then
     logger "Domain not set, exiting container"
+    sleep 30
     exit 1
   fi
 }
@@ -46,6 +47,7 @@ validate_domain(){
 validate_api_key(){
   if [[ "${api_key}" == 'NULL' ]]; then
     logger "Api_key not set, exiting container"
+    sleep 30
     exit 1
   fi
 }
@@ -82,7 +84,7 @@ monitor_and_update_domain(){
   while :; do
     for domain_to_update in "${domain_array[@]}"; do
       domain_dns_ip=$(dig +short "${domain_to_update}")
-      if ! external_ip=$(curl -s https://api.ipify.org); then
+      if ! external_ip=$(curl -s https://ifconfig.me); then
         logger "Unable to get external ip address"
         exit 1
       fi
