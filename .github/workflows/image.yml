@@ -2,7 +2,7 @@ name: buildx
 
 on:
   schedule:
-    - cron: '0 0 * * 0'
+    - cron: '20 0 * * *'
   pull_request:
     branches: master
   push:
