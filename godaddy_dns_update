@@ -30,9 +30,9 @@ logger(){
 # Setup logfile
 setup_logger(){
   if [[ "${subdomain}" == '*' ]] || [[ "${subdomain}" == '@' ]]; then
-    readonly logdest=/tmp/godaddy_dns_update_${domain}.log
+    readonly logdest=/tmp/godaddy_dns_update-domain.log
   else
-    readonly logdest=/tmp/godaddy_dns_update_${domain}_subdomain.log
+    readonly logdest=/tmp/godaddy_dns_update_subdomain.log
   fi
   touch "${logdest}" && chown ${puid}:${pgid} "${logdest}"
   chmod a+r "${logdest}"
